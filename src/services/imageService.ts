@@ -1,7 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export async function analyzeImage(imageData: string, mimeType: string) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'undefined') {
+    throw new Error("GEMINI_API_KEY is missing. Please add it to your environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",

@@ -1,7 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export async function getCoachingInsights(retailData: any, imageMetrics: any) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'undefined') {
+    throw new Error("GEMINI_API_KEY is missing. Please add it to your environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
     You are a Smart Orchestration & Coaching Agent. 

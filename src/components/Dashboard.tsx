@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Image, BarChart3, Zap, BrainCircuit, AlertTriangle, TrendingUp, Package } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { getCoachingInsights } from '../services/coachingService';
 
 interface CategoryStat {
   category: string;
@@ -43,19 +44,36 @@ export default function Dashboard() {
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [coaching, setCoaching] = useState<CoachingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [retailRes, insRes, coachRes] = await Promise.allSettled([
+        const [retailRes, insRes] = await Promise.allSettled([
           fetch('/api/retail-data').then(res => res.ok ? res.json() : Promise.reject('Failed to fetch retail data')),
-          fetch('/api/insights').then(res => res.ok ? res.json() : Promise.reject('Failed to fetch insights')),
-          fetch('/api/coaching-insights').then(res => res.ok ? res.json() : Promise.reject('Failed to fetch coaching insights'))
+          fetch('/api/insights').then(res => res.ok ? res.json() : Promise.reject('Failed to fetch insights'))
         ]);
 
-        if (retailRes.status === 'fulfilled') setRetailData(retailRes.value);
-        if (insRes.status === 'fulfilled') setInsight(insRes.value);
-        if (coachRes.status === 'fulfilled') setCoaching(coachRes.value);
+        let fetchedRetailData = null;
+        if (retailRes.status === 'fulfilled') {
+          fetchedRetailData = retailRes.value;
+          setRetailData(fetchedRetailData);
+        }
+        if (insRes.status === 'fulfilled') {
+          setInsight(insRes.value);
+        }
+
+        // Generate coaching insights directly on the frontend
+        if (fetchedRetailData) {
+          try {
+            const imageMetrics = { quality: 0.8, coverage: 0.9 }; // Mocked for now
+            const coachData = await getCoachingInsights(fetchedRetailData, imageMetrics);
+            setCoaching(coachData);
+          } catch (coachErr: any) {
+            console.error("Error generating coaching insights:", coachErr);
+            setError(coachErr.message || "Failed to generate coaching insights. Please check your API key.");
+          }
+        }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       } finally {
@@ -169,20 +187,37 @@ export default function Dashboard() {
           <BrainCircuit className="w-6 h-6 text-amber-400" />
           <h2 className="text-lg font-medium">Smart Coaching Agent</h2>
         </div>
-        <p className="text-zinc-300 mb-6 text-sm leading-relaxed">{coaching?.summary}</p>
         
-        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Recommended Actions</h3>
-        <div className="space-y-3 overflow-y-auto max-h-64 pr-2 custom-scrollbar">
-          {coaching?.daily_actions?.map((action, i) => (
-            <div key={i} className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors">
-              <div className="flex items-start justify-between mb-2">
-                <p className="font-medium text-zinc-100 text-sm">{action.title}</p>
-                {action.severity === 'High' && <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />}
-              </div>
-              <p className="text-xs text-zinc-400 leading-relaxed">{action.description}</p>
+        {error ? (
+          <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-4 text-sm text-red-400">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-semibold">AI Connection Error</span>
             </div>
-          ))}
-        </div>
+            {error}
+          </div>
+        ) : coaching ? (
+          <>
+            <p className="text-zinc-300 mb-6 text-sm leading-relaxed">{coaching.summary}</p>
+            
+            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Recommended Actions</h3>
+            <div className="space-y-3 overflow-y-auto max-h-64 pr-2 custom-scrollbar">
+              {coaching.daily_actions?.map((action, i) => (
+                <div key={i} className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-zinc-100 text-sm">{action.title}</p>
+                    {action.severity === 'High' && <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-relaxed">{action.description}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-48">
+            <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
       </section>
     </div>
   );

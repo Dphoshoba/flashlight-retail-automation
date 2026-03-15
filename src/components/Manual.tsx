@@ -45,6 +45,18 @@ export default function Manual() {
           <Cloud className="w-6 h-6 text-violet-400" />
           <h3 className="text-lg font-medium text-white">Deployment & Exporting</h3>
         </div>
+        
+        <div className="bg-red-950/30 border border-red-900/50 rounded-xl p-4 mb-6">
+          <h4 className="text-red-400 font-semibold mb-2">Critical: Gemini API Key Configuration</h4>
+          <p className="text-sm text-red-200/80 mb-2">
+            If you see an error like <code>API key not valid. Please pass a valid API key.</code> after deploying, it means the API key was not provided during the <strong>build process</strong>.
+          </p>
+          <ul className="text-sm text-red-200/80 list-disc list-inside space-y-1">
+            <li><strong>Cloud Run:</strong> When deploying, you MUST add <code>GEMINI_API_KEY</code> under <strong>Build environment variables</strong> (not just regular environment variables).</li>
+            <li><strong>Firebase/Local:</strong> Ensure you have a <code>.env</code> file with <code>GEMINI_API_KEY=your_key</code> before running <code>npm run build</code>.</li>
+          </ul>
+        </div>
+
         <p className="text-sm leading-relaxed mb-4">
           To deploy this application or commit it to your own repositories (like GitHub or Firebase), use the built-in AI Studio tools:
         </p>
